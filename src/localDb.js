@@ -78,7 +78,7 @@ export function getStoredMessages() {
       id: 1,
       name: "Recruiter",
       email: "recruiter@example.com",
-      message: "Halo, kami tertarik melihat portfolio dan proyek Anda.",
+      message: "Halo, kami tertarik melihat project dan layanan Anda.",
     },
   ];
 

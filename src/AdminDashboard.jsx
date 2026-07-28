@@ -25,6 +25,7 @@ const emptyProjectForm = {
   stack: "",
   demo: "",
   github: "",
+  imageUrl: "",
 };
 
 const emptyMessageForm = {
@@ -39,9 +40,6 @@ const emptyContentForm = {
   body: "",
   metaText: "",
 };
-
-const hasValue = (values) =>
-  values.some((value) => String(value || "").trim().length > 0);
 
 const moveItem = (items, draggedId, targetId) => {
   const fromIndex = items.findIndex((item) => item.id === draggedId);
@@ -60,7 +58,7 @@ const menuItems = [
   ["content", "Konten Website", "external"],
   ["services", "Layanan", "sparkle"],
   ["pricing", "Paket Harga", "check"],
-  ["projects", "Portfolio", "external"],
+  ["projects", "Project", "external"],
   ["messages", "Pesan Masuk", "mail"],
   ["faq", "FAQ", "code"],
   ["testimonials", "Testimoni", "sparkle"],
@@ -190,9 +188,9 @@ function AdminDashboard({
 
     try {
       await reorderProjects(nextProjects.map((project) => project.id));
-      showNotice("Urutan portfolio berhasil disimpan.");
+      showNotice("Urutan project berhasil disimpan.");
     } catch (error) {
-      showNotice(error.message || "Urutan portfolio gagal disimpan.", "error");
+      showNotice(error.message || "Urutan project gagal disimpan.", "error");
     }
   };
 
@@ -236,7 +234,7 @@ function AdminDashboard({
     activeMenu === "dashboard"
       ? "Dashboard Admin"
       : activeMenu === "projects"
-        ? "Portfolio / Proyek"
+        ? "Project"
         : activeMenu === "messages"
           ? "Pesan Masuk"
           : activeMenu === "settings"
@@ -245,7 +243,7 @@ function AdminDashboard({
 
   const pageDescription =
     activeMenu === "dashboard"
-      ? "Kelola isi website jasa, portfolio, pesan masuk, dan pengaturan dari satu tempat."
+      ? "Kelola isi website jasa, project, pesan masuk, dan pengaturan dari satu tempat."
       : "Gunakan menu ini untuk memperbarui konten yang tampil di website jasa.";
 
   const handleProjectChange = (event) => {
@@ -272,6 +270,7 @@ function AdminDashboard({
         demo: projectForm.demo || "#contact",
         github: projectForm.github || "https://github.com/",
       },
+      imageUrl: projectForm.imageUrl,
       sortOrder: currentProject?.sortOrder || projects.length + 1,
     };
 
@@ -306,6 +305,7 @@ function AdminDashboard({
       stack: project.stack.join(", "),
       demo: project.links.demo,
       github: project.links.github,
+      imageUrl: project.imageUrl || "",
     });
   };
 
@@ -391,6 +391,34 @@ function AdminDashboard({
       ...currentForm,
       [event.target.name]: event.target.value,
     }));
+  };
+
+  const handleProjectImageChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      showNotice("File harus berupa gambar.", "error");
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > 1.5 * 1024 * 1024) {
+      showNotice("Ukuran foto maksimal 1.5MB.", "error");
+      event.target.value = "";
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setProjectForm((currentForm) => ({
+        ...currentForm,
+        imageUrl: reader.result,
+      }));
+    };
+    reader.onerror = () => showNotice("Foto gagal dibaca.", "error");
+    reader.readAsDataURL(file);
+    event.target.value = "";
   };
 
   const saveContent = async (event) => {
@@ -496,93 +524,15 @@ function AdminDashboard({
 
   const getContentPreviewItems = (config) => {
     const items = contentData[config.type] || [];
-    const fallbackItem = items[0] || {};
-    const isTyping = hasValue([
-      contentForm.title,
-      contentForm.subtitle,
-      contentForm.body,
-      contentForm.metaText,
-    ]);
-
-    if (!isTyping) return items;
-
-    const draftItem = {
-      id: "draft",
-      title: contentForm.title || fallbackItem.title || "Judul konten",
-      subtitle:
-        contentForm.subtitle || fallbackItem.subtitle || config.subtitleLabel,
-      body: contentForm.body || fallbackItem.body || config.bodyLabel,
-      meta:
-        activeMenu === "pricing"
-          ? {
-              items: contentForm.metaText
-                .split(",")
-                .map((item) => item.trim())
-                .filter(Boolean),
-            }
-          : activeMenu === "testimonials"
-            ? { rating: Number(contentForm.metaText || fallbackItem.meta?.rating || 5) }
-            : fallbackItem.meta || {},
-    };
-
-    return [
-      draftItem,
-      ...items.filter((item) => item.id !== editingContentId),
-    ];
+    return items;
   };
 
   const getProjectPreviewItems = () => {
-    const fallbackProject = projects[0] || {};
-    const isTyping = hasValue([
-      projectForm.title,
-      projectForm.category,
-      projectForm.desc,
-      projectForm.stack,
-    ]);
-
-    if (!isTyping) return projects;
-
-    const draftProject = {
-      id: "draft",
-      category: projectForm.category || fallbackProject.category || "Web App",
-      title: projectForm.title || fallbackProject.title || "Nama Proyek",
-      desc:
-        projectForm.desc ||
-        fallbackProject.desc ||
-        "Deskripsi singkat proyek akan tampil di sini.",
-      stack: projectForm.stack
-        ? projectForm.stack
-            .split(",")
-            .map((stack) => stack.trim())
-          .filter(Boolean)
-        : fallbackProject.stack || ["React", "MySQL"],
-      accent: fallbackProject.accent || "blue",
-    };
-
-    return [
-      draftProject,
-      ...projects.filter((project) => project.id !== editingProjectId),
-    ];
+    return projects;
   };
 
   const getMessagePreviewItems = () => {
-    const isTyping = hasValue([
-      messageForm.name,
-      messageForm.email,
-      messageForm.message,
-    ]);
-
-    if (!isTyping) return messages;
-
-    return [
-      {
-        id: "draft",
-        name: messageForm.name || "Nama pengirim",
-        email: messageForm.email || "email@example.com",
-        message: messageForm.message || "Isi pesan akan tampil di sini.",
-      },
-      ...messages.filter((message) => message.id !== editingMessageId),
-    ];
+    return messages;
   };
 
   const renderPreview = () => {
@@ -617,15 +567,15 @@ function AdminDashboard({
           <div className="admin-card-head">
             <div>
               <span>Mini View</span>
-              <h2>Preview Portfolio</h2>
+              <h2>Preview Project</h2>
             </div>
           </div>
 
           <div className="preview-list preview-list--projects">
             {previewProjects.length === 0 && (
               <article className="preview-content">
-                <span>Portfolio</span>
-                <h3>Belum ada portfolio</h3>
+                <span>Project</span>
+                <h3>Belum ada project</h3>
                 <p>Tambahkan proyek pertama lewat form di bawah.</p>
               </article>
             )}
@@ -633,10 +583,13 @@ function AdminDashboard({
             {previewProjects.map((project) => (
               <article className={`preview-project project-card--${project.accent}`} key={project.id}>
                 <div className="preview-art">
+                  {project.imageUrl && (
+                    <img className="project-image" src={project.imageUrl} alt={project.title} />
+                  )}
                   <span className="art-grid" />
                 </div>
                 <div>
-                  <span>{project.id === "draft" ? "Draft Preview" : project.category}</span>
+                  <span>{project.category}</span>
                   <h3>{project.title}</h3>
                   <p>{project.desc}</p>
                   <div className="tag-row">
@@ -674,7 +627,7 @@ function AdminDashboard({
 
             {previewMessages.map((message) => (
               <article className="preview-message" key={message.id}>
-                <span>{message.id === "draft" ? "Draft Preview" : message.email}</span>
+                <span>{message.email}</span>
                 <h3>{message.name}</h3>
                 <p>{message.message}</p>
               </article>
@@ -727,7 +680,7 @@ function AdminDashboard({
 
             {previewItems.map((item) => (
               <article className={`preview-content preview-content--${activeMenu}`} key={item.id}>
-                <span>{item.id === "draft" ? "Draft Preview" : item.subtitle || activeConfig.eyebrow}</span>
+                <span>{item.subtitle || activeConfig.eyebrow}</span>
                 <h3>{item.title || "Judul konten"}</h3>
                 <p>{item.body || "Isi konten akan tampil di sini."}</p>
                 {activeMenu === "pricing" && item.meta?.items?.length > 0 && (
@@ -927,7 +880,7 @@ function AdminDashboard({
                 <article>
                   <span>Total Proyek</span>
                   <b>{projects.length}</b>
-                  <small>Portfolio aktif</small>
+                  <small>Project aktif</small>
                 </article>
                 <article>
                   <span>Pesan Masuk</span>
@@ -972,7 +925,7 @@ function AdminDashboard({
                   <ul>
                     <li><span /><p>9 menu admin sudah aktif.</p></li>
                     <li><span /><p>Konten tersimpan di database MySQL.</p></li>
-                    <li><span /><p>Portfolio dan pesan sudah punya CRUD dasar.</p></li>
+                    <li><span /><p>Project dan pesan sudah punya CRUD dasar.</p></li>
                   </ul>
                 </section>
               </div>
@@ -983,8 +936,8 @@ function AdminDashboard({
             <section className="admin-card admin-link-list">
               <div className="admin-card-head">
                 <div>
-                  <span>Portfolio</span>
-                  <h2>Daftar Proyek</h2>
+                  <span>Project</span>
+                  <h2>Daftar Project</h2>
                 </div>
               </div>
 
@@ -1017,6 +970,27 @@ function AdminDashboard({
                   Link Source
                   <input name="github" value={projectForm.github} onChange={handleProjectChange} placeholder="https://github.com/..." />
                 </label>
+                <label className="field-wide">
+                  Foto Project
+                  <input type="file" accept="image/*" onChange={handleProjectImageChange} />
+                </label>
+                {projectForm.imageUrl && (
+                  <div className="project-photo-preview field-wide">
+                    <img src={projectForm.imageUrl} alt="Preview foto project" />
+                    <button
+                      className="button button--ghost"
+                      type="button"
+                      onClick={() =>
+                        setProjectForm((currentForm) => ({
+                          ...currentForm,
+                          imageUrl: "",
+                        }))
+                      }
+                    >
+                      Hapus Foto
+                    </button>
+                  </div>
+                )}
                 <button className="button button--primary" type="submit">
                   {editingProjectId ? "Simpan Perubahan" : "Tambah Proyek"}
                 </button>
@@ -1042,6 +1016,7 @@ function AdminDashboard({
                       <span>{project.category}</span>
                       <h3>{project.title}</h3>
                       <p>{project.desc}</p>
+                      {project.imageUrl && <small>Foto project sudah tersimpan</small>}
                     </div>
                     <div className="project-link-actions">
                       <button className="drag-handle" type="button">Seret</button>
@@ -1061,7 +1036,7 @@ function AdminDashboard({
               <div className="admin-card-head">
                 <div>
                   <span>Inbox</span>
-                  <h2>Pesan Portfolio</h2>
+                  <h2>Pesan Masuk</h2>
                 </div>
               </div>
               <form className="message-form" onSubmit={saveMessage}>

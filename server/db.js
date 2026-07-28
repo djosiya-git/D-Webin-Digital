@@ -65,6 +65,7 @@ export async function initDatabase() {
       accent VARCHAR(30) DEFAULT 'blue',
       demo_url VARCHAR(255),
       source_url VARCHAR(255),
+      image_url LONGTEXT,
       sort_order INT DEFAULT 0,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
@@ -100,6 +101,8 @@ export async function initDatabase() {
   `);
 
   await ensureColumn(connection, "projects", "sort_order", "INT DEFAULT 0");
+  await ensureColumn(connection, "projects", "image_url", "LONGTEXT");
+  await connection.query("ALTER TABLE `projects` MODIFY COLUMN `image_url` LONGTEXT");
   await ensureColumn(connection, "messages", "sort_order", "INT DEFAULT 0");
 
   await connection.end();

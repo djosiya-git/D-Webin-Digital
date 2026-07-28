@@ -36,7 +36,7 @@ function LoginPage({ Icon, onBack, onLogin }) {
             <h1>Masuk ke Dashboard</h1>
             <p>
               Gunakan akun admin untuk mengelola daftar proyek dan link
-              portfolio.
+              project.
             </p>
           </div>
 
@@ -72,7 +72,7 @@ function LoginPage({ Icon, onBack, onLogin }) {
           </form>
 
           <button className="login-back" onClick={onBack}>
-            Kembali ke Portfolio
+            Kembali ke Website
           </button>
         </section>
       </main>

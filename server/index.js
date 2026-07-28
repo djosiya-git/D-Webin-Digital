@@ -30,11 +30,11 @@ const defaultProjects = [
   },
   {
     category: "Frontend",
-    title: "Portfolio Developer",
+    title: "Website Developer",
     description:
       "Website personal responsif dengan micro-interactions dan pengalaman pengguna modern.",
     details:
-      "Portfolio yang berfokus pada visual modern, kemudahan navigasi, performa ringan, dan presentasi proyek yang mudah dipahami.",
+      "Website project yang berfokus pada visual modern, kemudahan navigasi, performa ringan, dan presentasi proyek yang mudah dipahami.",
     stack: ["React", "CSS", "Vite"],
     accent: "blue",
     demoUrl: "#home",
@@ -65,7 +65,7 @@ const defaultSettings = [
 ];
 
 app.use(cors({ origin: allowedOrigins }));
-app.use(express.json());
+app.use(express.json({ limit: "3mb" }));
 app.use((req, _res, next) => {
   if (req.url === "/nodeapp") {
     req.url = "/";
@@ -94,6 +94,7 @@ function mapProject(row) {
       demo: row.demo_url || "#contact",
       github: row.source_url || "https://github.com/",
     },
+    imageUrl: row.image_url || "",
     sortOrder: row.sort_order || 0,
   };
 }
@@ -241,8 +242,8 @@ app.post("/api/projects", authRequired, async (req, res) => {
   );
   const [result] = await pool.query(
     `INSERT INTO projects
-      (category, title, description, details, stack_json, accent, demo_url, source_url, sort_order)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (category, title, description, details, stack_json, accent, demo_url, source_url, image_url, sort_order)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       project.category,
       project.title,
@@ -252,6 +253,7 @@ app.post("/api/projects", authRequired, async (req, res) => {
       project.accent || "blue",
       project.links?.demo || "#contact",
       project.links?.github || "https://github.com/",
+      project.imageUrl || "",
       orderRow.nextOrder,
     ],
   );
@@ -280,7 +282,7 @@ app.put("/api/projects/:id", authRequired, async (req, res) => {
   await pool.query(
     `UPDATE projects
      SET category = ?, title = ?, description = ?, details = ?, stack_json = ?,
-         accent = ?, demo_url = ?, source_url = ?, sort_order = ?
+         accent = ?, demo_url = ?, source_url = ?, image_url = ?, sort_order = ?
      WHERE id = ?`,
     [
       project.category,
@@ -291,6 +293,7 @@ app.put("/api/projects/:id", authRequired, async (req, res) => {
       project.accent || "blue",
       project.links?.demo || "#contact",
       project.links?.github || "https://github.com/",
+      project.imageUrl || "",
       project.sortOrder || 0,
       req.params.id,
     ],

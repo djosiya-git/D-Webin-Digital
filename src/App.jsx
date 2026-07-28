@@ -124,12 +124,12 @@ const fallbackProjects = [
   {
     id: 2,
     category: "Frontend",
-    title: "Portfolio Developer",
+    title: "Website Developer",
     desc: "Website personal responsif dengan micro-interactions dan pengalaman pengguna modern.",
     stack: ["React", "CSS", "Vite"],
     accent: "blue",
     details:
-      "Portfolio yang berfokus pada visual modern, kemudahan navigasi, performa ringan, dan presentasi proyek yang mudah dipahami.",
+      "Website project yang berfokus pada visual modern, kemudahan navigasi, performa ringan, dan presentasi proyek yang mudah dipahami.",
     links: { demo: "#home", github: "https://github.com/" },
   },
   {
@@ -422,7 +422,7 @@ function App() {
     ["Home", "#home"],
     ["Layanan", "#services"],
     ["Paket", "#pricing"],
-    ["Portfolio", "#projects"],
+    ["Project", "#projects"],
     ["FAQ", "#faq"],
     ["Kontak", "#contact"],
   ];
@@ -779,7 +779,7 @@ function App() {
         <section id="projects" className="section-wrap projects reveal">
           <div className="projects-head">
             <div className="section-heading">
-              <p className="eyebrow">05 - Portfolio</p>
+              <p className="eyebrow">05 - Project</p>
               <h2>
                 Contoh solusi yang
                 <br />
@@ -802,9 +802,9 @@ function App() {
             {filteredProjects.length === 0 && (
               <article className="project-empty">
                 <Icon name="external" size={24} />
-                <h3>Belum ada portfolio</h3>
+                <h3>Belum ada project</h3>
                 <p>
-                  Data portfolio akan tampil setelah ditambahkan dari admin.
+                  Data project akan tampil setelah ditambahkan dari admin.
                 </p>
               </article>
             )}
@@ -816,6 +816,9 @@ function App() {
                 style={{ "--delay": `${index * 80}ms` }}
               >
                 <div className="project-art">
+                  {project.imageUrl && (
+                    <img className="project-image" src={project.imageUrl} alt={project.title} />
+                  )}
                   <span className="art-grid" />
                   <span className="project-index">0{project.id}</span>
                   <span className="project-shape shape-a" />
@@ -984,6 +987,13 @@ function App() {
             >
               <Icon name="close" />
             </button>
+            {selectedProject.imageUrl && (
+              <img
+                className="project-modal-image"
+                src={selectedProject.imageUrl}
+                alt={selectedProject.title}
+              />
+            )}
             <p className="project-category">{selectedProject.category}</p>
             <h3>{selectedProject.title}</h3>
             <p>{selectedProject.details}</p>

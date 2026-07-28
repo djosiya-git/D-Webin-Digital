@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS projects (
   accent VARCHAR(30) DEFAULT 'blue',
   demo_url VARCHAR(255),
   source_url VARCHAR(255),
+  image_url LONGTEXT,
   sort_order INT DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
