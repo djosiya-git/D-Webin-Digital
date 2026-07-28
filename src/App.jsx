@@ -229,7 +229,7 @@ function App() {
   const [scrolled, setScrolled] = useState(false);
   const [page, setPage] = useState("home");
   const [user, setUser] = useState(() => getStoredSession());
-  const [projects, setProjects] = useState(fallbackProjects);
+  const [projects, setProjects] = useState([]);
   const [messages, setMessages] = useState([]);
   const [apiError, setApiError] = useState("");
   const [services, setServices] = useState(fallbackServices);
@@ -278,6 +278,7 @@ function App() {
         setApiError("");
       })
       .catch(() => {
+        setProjects([]);
         setApiError("API belum aktif. Jalankan npm run server.");
       });
   }, []);
@@ -304,13 +305,25 @@ function App() {
       { threshold: 0.12 },
     );
 
-    document.querySelectorAll(".reveal").forEach((el) => observer.observe(el));
     window.addEventListener("scroll", onScroll);
+    onScroll();
+
+    if (page === "home") {
+      window.requestAnimationFrame(() => {
+        document.querySelectorAll(".reveal").forEach((el) => {
+          if (el.getBoundingClientRect().top < window.innerHeight * 0.95) {
+            el.classList.add("is-visible");
+          }
+          observer.observe(el);
+        });
+      });
+    }
+
     return () => {
       observer.disconnect();
       window.removeEventListener("scroll", onScroll);
     };
-  }, []);
+  }, [page, projects.length, services.length, packages.length, faqs.length, testimonials.length]);
 
   useEffect(() => {
     const onKey = (event) => event.key === "Escape" && setSelectedProject(null);
@@ -322,7 +335,7 @@ function App() {
     return activeFilter === "All"
       ? projects
       : projects.filter((project) => project.category === activeFilter);
-  }, [activeFilter]);
+  }, [activeFilter, projects]);
   const whatsappLink = `https://wa.me/${settings.whatsapp}?text=Halo%20DWebin%20Digital,%20kami%20ingin%20konsultasi%20pembuatan%20website.`;
   const heroTitle = pageContent.subtitle || "Website profesional untuk bisnis dan sekolah";
   const heroDescription =
@@ -339,6 +352,12 @@ function App() {
   ];
 
   const closeMenu = () => setIsMenuOpen(false);
+
+  const showHome = () => {
+    setPage("home");
+    setIsMenuOpen(false);
+    window.setTimeout(() => window.scrollTo({ top: 0, behavior: "auto" }), 0);
+  };
 
   const copyEmail = async () => {
     try {
@@ -381,7 +400,7 @@ function App() {
     return (
       <LoginPage
         Icon={Icon}
-        onBack={() => setPage("home")}
+        onBack={showHome}
         onLogin={(loggedInUser) => {
           setUser(loggedInUser);
           setPage("admin");
@@ -395,7 +414,7 @@ function App() {
       return (
         <LoginPage
           Icon={Icon}
-          onBack={() => setPage("home")}
+          onBack={showHome}
           onLogin={(loggedInUser) => {
             setUser(loggedInUser);
             setPage("admin");
@@ -410,7 +429,7 @@ function App() {
         Icon={Icon}
         user={user}
         messages={messages}
-        onBack={() => setPage("home")}
+        onBack={showHome}
         onLogout={logoutAdmin}
         onProjectsChange={setProjects}
         onMessagesChange={setMessages}
@@ -682,6 +701,14 @@ function App() {
             </div>
           </div>
           <div className="projects-grid">
+            {filteredProjects.length === 0 && (
+              <article className="project-empty">
+                <Icon name="external" size={24} />
+                <h3>Belum ada portfolio</h3>
+                <p>Data portfolio akan tampil setelah ditambahkan dari admin.</p>
+              </article>
+            )}
+
             {filteredProjects.map((project, index) => (
               <article
                 className={`project-card project-card--${project.accent}`}

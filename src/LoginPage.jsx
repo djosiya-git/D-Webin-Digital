@@ -3,7 +3,7 @@ import { login } from "./api";
 import dwebinLogo from "./assets/dwebin-logo.png";
 
 function LoginPage({ Icon, onBack, onLogin }) {
-  const [form, setForm] = useState({ username: "admin", password: "admin123" });
+  const [form, setForm] = useState({ username: "", password: "" });
   const [error, setError] = useState("");
 
   const handleChange = (event) => {
@@ -48,6 +48,7 @@ function LoginPage({ Icon, onBack, onLogin }) {
                 value={form.username}
                 onChange={handleChange}
                 placeholder="Masukkan username"
+                autoComplete="username"
               />
             </label>
 
@@ -59,6 +60,7 @@ function LoginPage({ Icon, onBack, onLogin }) {
                 value={form.password}
                 onChange={handleChange}
                 placeholder="Masukkan password"
+                autoComplete="current-password"
               />
             </label>
 
@@ -68,11 +70,6 @@ function LoginPage({ Icon, onBack, onLogin }) {
               Login <Icon name="arrow" size={18} />
             </button>
           </form>
-
-          <div className="login-help">
-            <span>Akun default</span>
-            <b>admin / admin123</b>
-          </div>
 
           <button className="login-back" onClick={onBack}>
             Kembali ke Portfolio
