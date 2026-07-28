@@ -115,6 +115,7 @@ function AdminDashboard({
   const [editingContentId, setEditingContentId] = useState(null);
   const [settings, setSettings] = useState({});
   const [settingsStatus, setSettingsStatus] = useState("");
+  const [notice, setNotice] = useState(null);
 
   const uniqueCategories = useMemo(
     () => [...new Set(projects.map((project) => project.category))],
@@ -139,6 +140,17 @@ function AdminDashboard({
       .then(setSettings)
       .catch(() => setSettings({}));
   }, []);
+
+  useEffect(() => {
+    if (!notice) return undefined;
+
+    const timer = window.setTimeout(() => setNotice(null), 3200);
+    return () => window.clearTimeout(timer);
+  }, [notice]);
+
+  const showNotice = (message, type = "success") => {
+    setNotice({ message, type, id: Date.now() });
+  };
 
   const pageTitle =
     activeMenu === "dashboard"
@@ -181,20 +193,26 @@ function AdminDashboard({
       },
     };
 
-    if (editingProjectId) {
-      const savedProject = await updateProject(editingProjectId, newProject);
-      onProjectsChange(
-        projects.map((project) =>
-          project.id === editingProjectId ? savedProject : project,
-        ),
-      );
-      setEditingProjectId(null);
-    } else {
-      const savedProject = await createProject(newProject);
-      onProjectsChange([savedProject, ...projects]);
-    }
+    try {
+      if (editingProjectId) {
+        const savedProject = await updateProject(editingProjectId, newProject);
+        onProjectsChange(
+          projects.map((project) =>
+            project.id === editingProjectId ? savedProject : project,
+          ),
+        );
+        setEditingProjectId(null);
+        showNotice("Proyek berhasil diperbarui.");
+      } else {
+        const savedProject = await createProject(newProject);
+        onProjectsChange([savedProject, ...projects]);
+        showNotice("Proyek berhasil ditambahkan.");
+      }
 
-    setProjectForm(emptyProjectForm);
+      setProjectForm(emptyProjectForm);
+    } catch (error) {
+      showNotice(error.message || "Proyek gagal disimpan.", "error");
+    }
   };
 
   const startEditProject = (project) => {
@@ -215,8 +233,13 @@ function AdminDashboard({
   };
 
   const deleteProject = async (projectId) => {
-    await removeProject(projectId);
-    onProjectsChange(projects.filter((project) => project.id !== projectId));
+    try {
+      await removeProject(projectId);
+      onProjectsChange(projects.filter((project) => project.id !== projectId));
+      showNotice("Proyek berhasil dihapus.");
+    } catch (error) {
+      showNotice(error.message || "Proyek gagal dihapus.", "error");
+    }
   };
 
   const handleMessageChange = (event) => {
@@ -229,20 +252,26 @@ function AdminDashboard({
   const saveMessage = async (event) => {
     event.preventDefault();
 
-    if (editingMessageId) {
-      const savedMessage = await updateMessage(editingMessageId, messageForm);
-      onMessagesChange(
-        messages.map((message) =>
-          message.id === editingMessageId ? savedMessage : message,
-        ),
-      );
-      setEditingMessageId(null);
-    } else {
-      const savedMessage = await createMessage(messageForm);
-      onMessagesChange([savedMessage, ...messages]);
-    }
+    try {
+      if (editingMessageId) {
+        const savedMessage = await updateMessage(editingMessageId, messageForm);
+        onMessagesChange(
+          messages.map((message) =>
+            message.id === editingMessageId ? savedMessage : message,
+          ),
+        );
+        setEditingMessageId(null);
+        showNotice("Pesan berhasil diperbarui.");
+      } else {
+        const savedMessage = await createMessage(messageForm);
+        onMessagesChange([savedMessage, ...messages]);
+        showNotice("Pesan berhasil ditambahkan.");
+      }
 
-    setMessageForm(emptyMessageForm);
+      setMessageForm(emptyMessageForm);
+    } catch (error) {
+      showNotice(error.message || "Pesan gagal disimpan.", "error");
+    }
   };
 
   const startEditMessage = (message) => {
@@ -260,8 +289,13 @@ function AdminDashboard({
   };
 
   const deleteMessage = async (messageId) => {
-    await removeMessage(messageId);
-    onMessagesChange(messages.filter((message) => message.id !== messageId));
+    try {
+      await removeMessage(messageId);
+      onMessagesChange(messages.filter((message) => message.id !== messageId));
+      showNotice("Pesan berhasil dihapus.");
+    } catch (error) {
+      showNotice(error.message || "Pesan gagal dihapus.", "error");
+    }
   };
 
   const handleContentChange = (event) => {
@@ -287,28 +321,34 @@ function AdminDashboard({
       meta,
     };
 
-    if (editingContentId) {
-      const savedItem = await updateContentItem(
-        config.type,
-        editingContentId,
-        payload,
-      );
-      setContentData((currentData) => ({
-        ...currentData,
-        [config.type]: (currentData[config.type] || []).map((item) =>
-          item.id === editingContentId ? savedItem : item,
-        ),
-      }));
-      setEditingContentId(null);
-    } else {
-      const savedItem = await createContentItem(config.type, payload);
-      setContentData((currentData) => ({
-        ...currentData,
-        [config.type]: [...(currentData[config.type] || []), savedItem],
-      }));
-    }
+    try {
+      if (editingContentId) {
+        const savedItem = await updateContentItem(
+          config.type,
+          editingContentId,
+          payload,
+        );
+        setContentData((currentData) => ({
+          ...currentData,
+          [config.type]: (currentData[config.type] || []).map((item) =>
+            item.id === editingContentId ? savedItem : item,
+          ),
+        }));
+        setEditingContentId(null);
+        showNotice(`${config.eyebrow} berhasil diperbarui.`);
+      } else {
+        const savedItem = await createContentItem(config.type, payload);
+        setContentData((currentData) => ({
+          ...currentData,
+          [config.type]: [...(currentData[config.type] || []), savedItem],
+        }));
+        showNotice(`${config.eyebrow} berhasil ditambahkan.`);
+      }
 
-    setContentForm(emptyContentForm);
+      setContentForm(emptyContentForm);
+    } catch (error) {
+      showNotice(error.message || `${config.eyebrow} gagal disimpan.`, "error");
+    }
   };
 
   const startEditContent = (item) => {
@@ -332,11 +372,16 @@ function AdminDashboard({
   };
 
   const removeContent = async (type, itemId) => {
-    await deleteContentItem(type, itemId);
-    setContentData((currentData) => ({
-      ...currentData,
-      [type]: (currentData[type] || []).filter((item) => item.id !== itemId),
-    }));
+    try {
+      await deleteContentItem(type, itemId);
+      setContentData((currentData) => ({
+        ...currentData,
+        [type]: (currentData[type] || []).filter((item) => item.id !== itemId),
+      }));
+      showNotice("Data berhasil dihapus.");
+    } catch (error) {
+      showNotice(error.message || "Data gagal dihapus.", "error");
+    }
   };
 
   const handleSettingsChange = (event) => {
@@ -348,8 +393,13 @@ function AdminDashboard({
 
   const saveSettings = async (event) => {
     event.preventDefault();
-    await updateSettings(settings);
-    setSettingsStatus("Pengaturan berhasil disimpan.");
+    try {
+      await updateSettings(settings);
+      setSettingsStatus("Pengaturan berhasil disimpan.");
+      showNotice("Pengaturan berhasil disimpan.");
+    } catch (error) {
+      showNotice(error.message || "Pengaturan gagal disimpan.", "error");
+    }
   };
 
   const getContentPreviewItems = (config) => {
@@ -727,6 +777,7 @@ function AdminDashboard({
                   setEditingMessageId(null);
                   setEditingContentId(null);
                   setSettingsStatus("");
+                  setNotice(null);
                 }}
               >
                 <Icon name={icon} size={17} /> {label}
@@ -755,6 +806,15 @@ function AdminDashboard({
               Lihat Website
             </button>
           </div>
+
+          {notice && (
+            <div className={`admin-alert admin-alert--${notice.type}`} role="status">
+              <span>{notice.message}</span>
+              <button onClick={() => setNotice(null)} aria-label="Tutup alert">
+                x
+              </button>
+            </div>
+          )}
 
           {renderPreview()}
 
