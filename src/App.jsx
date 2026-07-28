@@ -256,6 +256,12 @@ const fallbackSettings = {
   linkedin: "https://www.linkedin.com/",
 };
 
+const getPageFromHash = () => {
+  if (window.location.hash === "#admin") return "admin";
+  if (window.location.hash === "#login") return "login";
+  return "home";
+};
+
 function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [theme, setTheme] = useState(
@@ -265,7 +271,7 @@ function App() {
   const [selectedProject, setSelectedProject] = useState(null);
   const [copied, setCopied] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [page, setPage] = useState("home");
+  const [page, setPage] = useState(() => getPageFromHash());
   const [user, setUser] = useState(() => getStoredSession());
   const [projects, setProjects] = useState([]);
   const [messages, setMessages] = useState([]);
@@ -287,6 +293,20 @@ function App() {
     document.documentElement.dataset.theme = theme;
     localStorage.setItem("portfolio-theme", theme);
   }, [theme]);
+
+  useEffect(() => {
+    const syncPageWithHash = () => setPage(getPageFromHash());
+    window.addEventListener("hashchange", syncPageWithHash);
+    return () => window.removeEventListener("hashchange", syncPageWithHash);
+  }, []);
+
+  useEffect(() => {
+    const targetHash = page === "home" ? "#home" : `#${page}`;
+
+    if (window.location.hash !== targetHash) {
+      window.history.replaceState(null, "", targetHash);
+    }
+  }, [page]);
 
   useEffect(() => {
     Promise.all([
@@ -451,7 +471,7 @@ function App() {
     await logout();
     setUser(null);
     setMessages([]);
-    setPage("home");
+    showHome();
   };
 
   if (page === "login") {
@@ -531,7 +551,13 @@ function App() {
         </nav>
 
         <div className="nav-actions">
-          <button className="login-button" onClick={() => setPage("login")}>
+          <button
+            className="login-button"
+            onClick={() => {
+              setPage("login");
+              setIsMenuOpen(false);
+            }}
+          >
             Login
           </button>
           <button
