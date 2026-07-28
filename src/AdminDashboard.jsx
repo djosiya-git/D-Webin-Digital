@@ -8,6 +8,9 @@ import {
   deleteProject as removeProject,
   getContentItems,
   getSettings,
+  reorderContentItems,
+  reorderMessages,
+  reorderProjects,
   updateContentItem,
   updateMessage,
   updateProject,
@@ -39,6 +42,18 @@ const emptyContentForm = {
 
 const hasValue = (values) =>
   values.some((value) => String(value || "").trim().length > 0);
+
+const moveItem = (items, draggedId, targetId) => {
+  const fromIndex = items.findIndex((item) => item.id === draggedId);
+  const toIndex = items.findIndex((item) => item.id === targetId);
+
+  if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return items;
+
+  const nextItems = [...items];
+  const [draggedItem] = nextItems.splice(fromIndex, 1);
+  nextItems.splice(toIndex, 0, draggedItem);
+  return nextItems.map((item, index) => ({ ...item, sortOrder: index + 1 }));
+};
 
 const menuItems = [
   ["dashboard", "Dashboard", "code"],
@@ -116,6 +131,7 @@ function AdminDashboard({
   const [settings, setSettings] = useState({});
   const [settingsStatus, setSettingsStatus] = useState("");
   const [notice, setNotice] = useState(null);
+  const [dragging, setDragging] = useState(null);
 
   const uniqueCategories = useMemo(
     () => [...new Set(projects.map((project) => project.category))],
@@ -152,6 +168,70 @@ function AdminDashboard({
     setNotice({ message, type, id: Date.now() });
   };
 
+  const startDrag = (type, itemId) => {
+    setDragging({ type, itemId });
+  };
+
+  const allowDrop = (event) => {
+    event.preventDefault();
+  };
+
+  const finishDrag = () => {
+    setDragging(null);
+  };
+
+  const reorderProjectItems = async (targetId) => {
+    if (!dragging || dragging.type !== "projects") return;
+    const nextProjects = moveItem(projects, dragging.itemId, targetId);
+    if (nextProjects === projects) return;
+
+    onProjectsChange(nextProjects);
+    setDragging(null);
+
+    try {
+      await reorderProjects(nextProjects.map((project) => project.id));
+      showNotice("Urutan portfolio berhasil disimpan.");
+    } catch (error) {
+      showNotice(error.message || "Urutan portfolio gagal disimpan.", "error");
+    }
+  };
+
+  const reorderMessageItems = async (targetId) => {
+    if (!dragging || dragging.type !== "messages") return;
+    const nextMessages = moveItem(messages, dragging.itemId, targetId);
+    if (nextMessages === messages) return;
+
+    onMessagesChange(nextMessages);
+    setDragging(null);
+
+    try {
+      await reorderMessages(nextMessages.map((message) => message.id));
+      showNotice("Urutan pesan berhasil disimpan.");
+    } catch (error) {
+      showNotice(error.message || "Urutan pesan gagal disimpan.", "error");
+    }
+  };
+
+  const reorderContentList = async (config, targetId) => {
+    if (!dragging || dragging.type !== config.type) return;
+    const items = contentData[config.type] || [];
+    const nextItems = moveItem(items, dragging.itemId, targetId);
+    if (nextItems === items) return;
+
+    setContentData((currentData) => ({
+      ...currentData,
+      [config.type]: nextItems,
+    }));
+    setDragging(null);
+
+    try {
+      await reorderContentItems(config.type, nextItems.map((item) => item.id));
+      showNotice(`Urutan ${config.eyebrow} berhasil disimpan.`);
+    } catch (error) {
+      showNotice(error.message || `Urutan ${config.eyebrow} gagal disimpan.`, "error");
+    }
+  };
+
   const pageTitle =
     activeMenu === "dashboard"
       ? "Dashboard Admin"
@@ -177,6 +257,7 @@ function AdminDashboard({
 
   const saveProject = async (event) => {
     event.preventDefault();
+    const currentProject = projects.find((project) => project.id === editingProjectId);
     const newProject = {
       category: projectForm.category,
       title: projectForm.title,
@@ -191,6 +272,7 @@ function AdminDashboard({
         demo: projectForm.demo || "#contact",
         github: projectForm.github || "https://github.com/",
       },
+      sortOrder: currentProject?.sortOrder || projects.length + 1,
     };
 
     try {
@@ -254,7 +336,13 @@ function AdminDashboard({
 
     try {
       if (editingMessageId) {
-        const savedMessage = await updateMessage(editingMessageId, messageForm);
+        const currentMessage = messages.find(
+          (message) => message.id === editingMessageId,
+        );
+        const savedMessage = await updateMessage(editingMessageId, {
+          ...messageForm,
+          sortOrder: currentMessage?.sortOrder || messages.length + 1,
+        });
         onMessagesChange(
           messages.map((message) =>
             message.id === editingMessageId ? savedMessage : message,
@@ -308,6 +396,9 @@ function AdminDashboard({
   const saveContent = async (event) => {
     event.preventDefault();
     const config = contentConfig[activeMenu];
+    const currentItem = (contentData[config.type] || []).find(
+      (item) => item.id === editingContentId,
+    );
     const meta =
       activeMenu === "pricing"
         ? { items: contentForm.metaText.split(",").map((item) => item.trim()).filter(Boolean) }
@@ -319,6 +410,7 @@ function AdminDashboard({
       subtitle: contentForm.subtitle,
       body: contentForm.body,
       meta,
+      sortOrder: currentItem?.sortOrder || (contentData[config.type] || []).length + 1,
     };
 
     try {
@@ -733,13 +825,24 @@ function AdminDashboard({
           )}
 
           {items.map((item) => (
-            <article key={item.id}>
+            <article
+              key={item.id}
+              className={dragging?.itemId === item.id ? "is-dragging" : ""}
+              draggable
+              onDragStart={() => startDrag(config.type, item.id)}
+              onDragOver={allowDrop}
+              onDrop={() => reorderContentList(config, item.id)}
+              onDragEnd={finishDrag}
+            >
               <div>
                 <span>{item.subtitle || config.eyebrow}</span>
                 <h3>{item.title}</h3>
                 <p>{item.body}</p>
               </div>
               <div className="project-link-actions">
+                <button className="drag-handle" type="button">
+                  Seret
+                </button>
                 <button onClick={() => startEditContent(item)}>
                   Edit
                 </button>
@@ -926,13 +1029,22 @@ function AdminDashboard({
 
               <div className="project-link-list">
                 {projects.map((project) => (
-                  <article key={project.id}>
+                  <article
+                    key={project.id}
+                    className={dragging?.itemId === project.id ? "is-dragging" : ""}
+                    draggable
+                    onDragStart={() => startDrag("projects", project.id)}
+                    onDragOver={allowDrop}
+                    onDrop={() => reorderProjectItems(project.id)}
+                    onDragEnd={finishDrag}
+                  >
                     <div>
                       <span>{project.category}</span>
                       <h3>{project.title}</h3>
                       <p>{project.desc}</p>
                     </div>
                     <div className="project-link-actions">
+                      <button className="drag-handle" type="button">Seret</button>
                       <a href={project.links.demo}>Demo</a>
                       <a href={project.links.github} target="_blank" rel="noreferrer">Source</a>
                       <button onClick={() => startEditProject(project)}>Edit</button>
@@ -967,13 +1079,22 @@ function AdminDashboard({
               </form>
               <div className="message-list">
                 {messages.map((item) => (
-                  <article key={item.id}>
+                  <article
+                    key={item.id}
+                    className={dragging?.itemId === item.id ? "is-dragging" : ""}
+                    draggable
+                    onDragStart={() => startDrag("messages", item.id)}
+                    onDragOver={allowDrop}
+                    onDrop={() => reorderMessageItems(item.id)}
+                    onDragEnd={finishDrag}
+                  >
                     <div>
                       <b>{item.name}</b>
                       <span>{item.email}</span>
                       <p>{item.message}</p>
                     </div>
                     <div className="project-link-actions">
+                      <button className="drag-handle" type="button">Seret</button>
                       <button onClick={() => startEditMessage(item)}>Edit</button>
                       <button onClick={() => deleteMessage(item.id)}>Hapus</button>
                     </div>

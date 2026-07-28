@@ -94,6 +94,7 @@ function mapProject(row) {
       demo: row.demo_url || "#contact",
       github: row.source_url || "https://github.com/",
     },
+    sortOrder: row.sort_order || 0,
   };
 }
 
@@ -227,16 +228,21 @@ app.post("/api/auth/logout", authRequired, (req, res) => {
 });
 
 app.get("/api/projects", async (_req, res) => {
-  const [rows] = await pool.query("SELECT * FROM projects ORDER BY id DESC");
+  const [rows] = await pool.query(
+    "SELECT * FROM projects ORDER BY sort_order ASC, id DESC",
+  );
   res.json(rows.map(mapProject));
 });
 
 app.post("/api/projects", authRequired, async (req, res) => {
   const project = req.body;
+  const [[orderRow]] = await pool.query(
+    "SELECT COALESCE(MAX(sort_order), 0) + 1 AS nextOrder FROM projects",
+  );
   const [result] = await pool.query(
     `INSERT INTO projects
-      (category, title, description, details, stack_json, accent, demo_url, source_url)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      (category, title, description, details, stack_json, accent, demo_url, source_url, sort_order)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       project.category,
       project.title,
@@ -246,6 +252,7 @@ app.post("/api/projects", authRequired, async (req, res) => {
       project.accent || "blue",
       project.links?.demo || "#contact",
       project.links?.github || "https://github.com/",
+      orderRow.nextOrder,
     ],
   );
 
@@ -255,12 +262,25 @@ app.post("/api/projects", authRequired, async (req, res) => {
   res.status(201).json(mapProject(row));
 });
 
+app.put("/api/projects/reorder", authRequired, async (req, res) => {
+  const { ids = [] } = req.body;
+  await Promise.all(
+    ids.map((id, index) =>
+      pool.query("UPDATE projects SET sort_order = ? WHERE id = ?", [
+        index + 1,
+        id,
+      ]),
+    ),
+  );
+  res.json({ ok: true });
+});
+
 app.put("/api/projects/:id", authRequired, async (req, res) => {
   const project = req.body;
   await pool.query(
     `UPDATE projects
      SET category = ?, title = ?, description = ?, details = ?, stack_json = ?,
-         accent = ?, demo_url = ?, source_url = ?
+         accent = ?, demo_url = ?, source_url = ?, sort_order = ?
      WHERE id = ?`,
     [
       project.category,
@@ -271,6 +291,7 @@ app.put("/api/projects/:id", authRequired, async (req, res) => {
       project.accent || "blue",
       project.links?.demo || "#contact",
       project.links?.github || "https://github.com/",
+      project.sortOrder || 0,
       req.params.id,
     ],
   );
@@ -286,26 +307,50 @@ app.delete("/api/projects/:id", authRequired, async (req, res) => {
 });
 
 app.get("/api/messages", authRequired, async (_req, res) => {
-  const [rows] = await pool.query("SELECT * FROM messages ORDER BY id DESC");
+  const [rows] = await pool.query(
+    "SELECT * FROM messages ORDER BY sort_order ASC, id DESC",
+  );
   res.json(rows);
 });
 
 app.post("/api/messages", async (req, res) => {
   const { name, email, message } = req.body;
-  const [result] = await pool.query(
-    "INSERT INTO messages (name, email, message) VALUES (?, ?, ?)",
-    [name, email, message],
+  const [[orderRow]] = await pool.query(
+    "SELECT COALESCE(MAX(sort_order), 0) + 1 AS nextOrder FROM messages",
   );
-  res.status(201).json({ id: result.insertId, name, email, message });
+  const [result] = await pool.query(
+    "INSERT INTO messages (name, email, message, sort_order) VALUES (?, ?, ?, ?)",
+    [name, email, message, orderRow.nextOrder],
+  );
+  res.status(201).json({
+    id: result.insertId,
+    name,
+    email,
+    message,
+    sortOrder: orderRow.nextOrder,
+  });
+});
+
+app.put("/api/messages/reorder", authRequired, async (req, res) => {
+  const { ids = [] } = req.body;
+  await Promise.all(
+    ids.map((id, index) =>
+      pool.query("UPDATE messages SET sort_order = ? WHERE id = ?", [
+        index + 1,
+        id,
+      ]),
+    ),
+  );
+  res.json({ ok: true });
 });
 
 app.put("/api/messages/:id", authRequired, async (req, res) => {
-  const { name, email, message } = req.body;
+  const { name, email, message, sortOrder } = req.body;
   await pool.query(
-    "UPDATE messages SET name = ?, email = ?, message = ? WHERE id = ?",
-    [name, email, message, req.params.id],
+    "UPDATE messages SET name = ?, email = ?, message = ?, sort_order = ? WHERE id = ?",
+    [name, email, message, sortOrder || 0, req.params.id],
   );
-  res.json({ id: Number(req.params.id), name, email, message });
+  res.json({ id: Number(req.params.id), name, email, message, sortOrder: sortOrder || 0 });
 });
 
 app.delete("/api/messages/:id", authRequired, async (req, res) => {
@@ -339,6 +384,19 @@ app.post("/api/content/:type", authRequired, async (req, res) => {
     result.insertId,
   ]);
   res.status(201).json(mapContent(row));
+});
+
+app.put("/api/content/:type/reorder", authRequired, async (req, res) => {
+  const { ids = [] } = req.body;
+  await Promise.all(
+    ids.map((id, index) =>
+      pool.query(
+        "UPDATE content_items SET sort_order = ? WHERE type = ? AND id = ?",
+        [index + 1, req.params.type, id],
+      ),
+    ),
+  );
+  res.json({ ok: true });
 });
 
 app.put("/api/content/:type/:id", authRequired, async (req, res) => {

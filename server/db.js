@@ -11,6 +11,22 @@ const dbConfig = {
   connectTimeout: 8000,
 };
 
+async function ensureColumn(connection, table, column, definition) {
+  const database = process.env.DB_NAME || "dwebin";
+  const [rows] = await connection.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
+    [database, table, column],
+  );
+
+  if (rows.length === 0) {
+    await connection.query(
+      `ALTER TABLE \`${table}\` ADD COLUMN \`${column}\` ${definition}`,
+    );
+  }
+}
+
 export async function initDatabase() {
   const database = process.env.DB_NAME || "dwebin";
   const connection = await mysql.createConnection(dbConfig);
@@ -49,6 +65,7 @@ export async function initDatabase() {
       accent VARCHAR(30) DEFAULT 'blue',
       demo_url VARCHAR(255),
       source_url VARCHAR(255),
+      sort_order INT DEFAULT 0,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
@@ -58,6 +75,7 @@ export async function initDatabase() {
       name VARCHAR(120) NOT NULL,
       email VARCHAR(160) NOT NULL,
       message TEXT NOT NULL,
+      sort_order INT DEFAULT 0,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
@@ -80,6 +98,9 @@ export async function initDatabase() {
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )
   `);
+
+  await ensureColumn(connection, "projects", "sort_order", "INT DEFAULT 0");
+  await ensureColumn(connection, "messages", "sort_order", "INT DEFAULT 0");
 
   await connection.end();
 }

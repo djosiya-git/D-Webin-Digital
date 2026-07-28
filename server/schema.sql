@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS projects (
   accent VARCHAR(30) DEFAULT 'blue',
   demo_url VARCHAR(255),
   source_url VARCHAR(255),
+  sort_order INT DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -31,6 +32,7 @@ CREATE TABLE IF NOT EXISTS messages (
   name VARCHAR(120) NOT NULL,
   email VARCHAR(160) NOT NULL,
   message TEXT NOT NULL,
+  sort_order INT DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

@@ -76,6 +76,13 @@ export function deleteProject(projectId) {
   return request(`/projects/${projectId}`, { method: "DELETE" });
 }
 
+export function reorderProjects(ids) {
+  return request("/projects/reorder", {
+    method: "PUT",
+    body: JSON.stringify({ ids }),
+  });
+}
+
 export function getMessages() {
   return request("/messages");
 }
@@ -98,6 +105,13 @@ export function deleteMessage(messageId) {
   return request(`/messages/${messageId}`, { method: "DELETE" });
 }
 
+export function reorderMessages(ids) {
+  return request("/messages/reorder", {
+    method: "PUT",
+    body: JSON.stringify({ ids }),
+  });
+}
+
 export function getContentItems(type) {
   return request(`/content/${type}`);
 }
@@ -118,6 +132,13 @@ export function updateContentItem(type, itemId, item) {
 
 export function deleteContentItem(type, itemId) {
   return request(`/content/${type}/${itemId}`, { method: "DELETE" });
+}
+
+export function reorderContentItems(type, ids) {
+  return request(`/content/${type}/reorder`, {
+    method: "PUT",
+    body: JSON.stringify({ ids }),
+  });
 }
 
 export function getSettings() {
