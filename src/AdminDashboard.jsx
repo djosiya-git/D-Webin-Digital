@@ -352,7 +352,7 @@ function AdminDashboard({
     setSettingsStatus("Pengaturan berhasil disimpan.");
   };
 
-  const getContentPreviewItem = (config) => {
+  const getContentPreviewItems = (config) => {
     const items = contentData[config.type] || [];
     const fallbackItem = items[0] || {};
     const isTyping = hasValue([
@@ -362,9 +362,10 @@ function AdminDashboard({
       contentForm.metaText,
     ]);
 
-    if (!isTyping) return fallbackItem;
+    if (!isTyping) return items;
 
-    return {
+    const draftItem = {
+      id: "draft",
       title: contentForm.title || fallbackItem.title || "Judul konten",
       subtitle:
         contentForm.subtitle || fallbackItem.subtitle || config.subtitleLabel,
@@ -381,9 +382,14 @@ function AdminDashboard({
             ? { rating: Number(contentForm.metaText || fallbackItem.meta?.rating || 5) }
             : fallbackItem.meta || {},
     };
+
+    return [
+      draftItem,
+      ...items.filter((item) => item.id !== editingContentId),
+    ];
   };
 
-  const getProjectPreviewItem = () => {
+  const getProjectPreviewItems = () => {
     const fallbackProject = projects[0] || {};
     const isTyping = hasValue([
       projectForm.title,
@@ -392,9 +398,10 @@ function AdminDashboard({
       projectForm.stack,
     ]);
 
-    if (!isTyping && fallbackProject.title) return fallbackProject;
+    if (!isTyping) return projects;
 
-    return {
+    const draftProject = {
+      id: "draft",
       category: projectForm.category || fallbackProject.category || "Web App",
       title: projectForm.title || fallbackProject.title || "Nama Proyek",
       desc:
@@ -405,10 +412,35 @@ function AdminDashboard({
         ? projectForm.stack
             .split(",")
             .map((stack) => stack.trim())
-            .filter(Boolean)
+          .filter(Boolean)
         : fallbackProject.stack || ["React", "MySQL"],
       accent: fallbackProject.accent || "blue",
     };
+
+    return [
+      draftProject,
+      ...projects.filter((project) => project.id !== editingProjectId),
+    ];
+  };
+
+  const getMessagePreviewItems = () => {
+    const isTyping = hasValue([
+      messageForm.name,
+      messageForm.email,
+      messageForm.message,
+    ]);
+
+    if (!isTyping) return messages;
+
+    return [
+      {
+        id: "draft",
+        name: messageForm.name || "Nama pengirim",
+        email: messageForm.email || "email@example.com",
+        message: messageForm.message || "Isi pesan akan tampil di sini.",
+      },
+      ...messages.filter((message) => message.id !== editingMessageId),
+    ];
   };
 
   const renderPreview = () => {
@@ -437,7 +469,7 @@ function AdminDashboard({
     }
 
     if (activeMenu === "projects") {
-      const project = getProjectPreviewItem();
+      const previewProjects = getProjectPreviewItems();
       return (
         <section className="admin-card live-preview">
           <div className="admin-card-head">
@@ -446,21 +478,66 @@ function AdminDashboard({
               <h2>Preview Portfolio</h2>
             </div>
           </div>
-          <article className={`preview-project project-card--${project.accent}`}>
-            <div className="preview-art">
-              <span className="art-grid" />
-            </div>
+
+          <div className="preview-list preview-list--projects">
+            {previewProjects.length === 0 && (
+              <article className="preview-content">
+                <span>Portfolio</span>
+                <h3>Belum ada portfolio</h3>
+                <p>Tambahkan proyek pertama lewat form di bawah.</p>
+              </article>
+            )}
+
+            {previewProjects.map((project) => (
+              <article className={`preview-project project-card--${project.accent}`} key={project.id}>
+                <div className="preview-art">
+                  <span className="art-grid" />
+                </div>
+                <div>
+                  <span>{project.id === "draft" ? "Draft Preview" : project.category}</span>
+                  <h3>{project.title}</h3>
+                  <p>{project.desc}</p>
+                  <div className="tag-row">
+                    {project.stack.map((stack) => (
+                      <span key={stack}>{stack}</span>
+                    ))}
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      );
+    }
+
+    if (activeMenu === "messages") {
+      const previewMessages = getMessagePreviewItems();
+      return (
+        <section className="admin-card live-preview">
+          <div className="admin-card-head">
             <div>
-              <span>{project.category}</span>
-              <h3>{project.title}</h3>
-              <p>{project.desc}</p>
-              <div className="tag-row">
-                {project.stack.map((stack) => (
-                  <span key={stack}>{stack}</span>
-                ))}
-              </div>
+              <span>Mini View</span>
+              <h2>Preview Pesan</h2>
             </div>
-          </article>
+          </div>
+
+          <div className="preview-list">
+            {previewMessages.length === 0 && (
+              <article className="preview-content">
+                <span>Inbox</span>
+                <h3>Belum ada pesan</h3>
+                <p>Pesan dari form kontak akan tampil di sini.</p>
+              </article>
+            )}
+
+            {previewMessages.map((message) => (
+              <article className="preview-message" key={message.id}>
+                <span>{message.id === "draft" ? "Draft Preview" : message.email}</span>
+                <h3>{message.name}</h3>
+                <p>{message.message}</p>
+              </article>
+            ))}
+          </div>
         </section>
       );
     }
@@ -471,20 +548,23 @@ function AdminDashboard({
           <div className="admin-card-head">
             <div>
               <span>Mini View</span>
-              <h2>Preview Kontak</h2>
+              <h2>Preview Pengaturan</h2>
             </div>
           </div>
-          <div className="preview-contact">
-            <b>{settings.brand_name || "DWebin Digital"}</b>
-            <span>{settings.email || "email@domain.com"}</span>
-            <p>WhatsApp: {settings.whatsapp || "628..."}</p>
+          <div className="preview-list preview-list--settings">
+            {["brand_name", "email", "whatsapp", "github", "linkedin"].map((key) => (
+              <article className="preview-setting" key={key}>
+                <span>{key.replace("_", " ")}</span>
+                <b>{settings[key] || "Belum diisi"}</b>
+              </article>
+            ))}
           </div>
         </section>
       );
     }
 
     if (activeConfig) {
-      const item = getContentPreviewItem(activeConfig);
+      const previewItems = getContentPreviewItems(activeConfig);
       return (
         <section className="admin-card live-preview">
           <div className="admin-card-head">
@@ -493,23 +573,36 @@ function AdminDashboard({
               <h2>Preview {activeConfig.eyebrow}</h2>
             </div>
           </div>
-          <article className={`preview-content preview-content--${activeMenu}`}>
-            <span>{item.subtitle || activeConfig.eyebrow}</span>
-            <h3>{item.title || "Judul konten"}</h3>
-            <p>{item.body || "Isi konten akan tampil di sini."}</p>
-            {activeMenu === "pricing" && item.meta?.items?.length > 0 && (
-              <ul>
-                {item.meta.items.map((feature) => (
-                  <li key={feature}>
-                    <Icon name="check" size={14} /> {feature}
-                  </li>
-                ))}
-              </ul>
+
+          <div className="preview-list">
+            {previewItems.length === 0 && (
+              <article className={`preview-content preview-content--${activeMenu}`}>
+                <span>{activeConfig.eyebrow}</span>
+                <h3>Belum ada data</h3>
+                <p>Tambahkan data pertama lewat form di bawah.</p>
+              </article>
             )}
-            {activeMenu === "testimonials" && (
-              <b>Rating {item.meta?.rating || 5}/5</b>
-            )}
-          </article>
+
+            {previewItems.map((item) => (
+              <article className={`preview-content preview-content--${activeMenu}`} key={item.id}>
+                <span>{item.id === "draft" ? "Draft Preview" : item.subtitle || activeConfig.eyebrow}</span>
+                <h3>{item.title || "Judul konten"}</h3>
+                <p>{item.body || "Isi konten akan tampil di sini."}</p>
+                {activeMenu === "pricing" && item.meta?.items?.length > 0 && (
+                  <ul>
+                    {item.meta.items.map((feature) => (
+                      <li key={feature}>
+                        <Icon name="check" size={14} /> {feature}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {activeMenu === "testimonials" && (
+                  <b>Rating {item.meta?.rating || 5}/5</b>
+                )}
+              </article>
+            ))}
+          </div>
         </section>
       );
     }
@@ -662,6 +755,8 @@ function AdminDashboard({
               Lihat Website
             </button>
           </div>
+
+          {renderPreview()}
 
           {activeMenu === "dashboard" && (
             <>
@@ -850,8 +945,6 @@ function AdminDashboard({
               </form>
             </section>
           )}
-
-          {renderPreview()}
         </section>
       </main>
     </div>
