@@ -37,6 +37,9 @@ const emptyContentForm = {
   metaText: "",
 };
 
+const hasValue = (values) =>
+  values.some((value) => String(value || "").trim().length > 0);
+
 const menuItems = [
   ["dashboard", "Dashboard", "code"],
   ["content", "Konten Website", "external"],
@@ -347,6 +350,171 @@ function AdminDashboard({
     event.preventDefault();
     await updateSettings(settings);
     setSettingsStatus("Pengaturan berhasil disimpan.");
+  };
+
+  const getContentPreviewItem = (config) => {
+    const items = contentData[config.type] || [];
+    const fallbackItem = items[0] || {};
+    const isTyping = hasValue([
+      contentForm.title,
+      contentForm.subtitle,
+      contentForm.body,
+      contentForm.metaText,
+    ]);
+
+    if (!isTyping) return fallbackItem;
+
+    return {
+      title: contentForm.title || fallbackItem.title || "Judul konten",
+      subtitle:
+        contentForm.subtitle || fallbackItem.subtitle || config.subtitleLabel,
+      body: contentForm.body || fallbackItem.body || config.bodyLabel,
+      meta:
+        activeMenu === "pricing"
+          ? {
+              items: contentForm.metaText
+                .split(",")
+                .map((item) => item.trim())
+                .filter(Boolean),
+            }
+          : activeMenu === "testimonials"
+            ? { rating: Number(contentForm.metaText || fallbackItem.meta?.rating || 5) }
+            : fallbackItem.meta || {},
+    };
+  };
+
+  const getProjectPreviewItem = () => {
+    const fallbackProject = projects[0] || {};
+    const isTyping = hasValue([
+      projectForm.title,
+      projectForm.category,
+      projectForm.desc,
+      projectForm.stack,
+    ]);
+
+    if (!isTyping && fallbackProject.title) return fallbackProject;
+
+    return {
+      category: projectForm.category || fallbackProject.category || "Web App",
+      title: projectForm.title || fallbackProject.title || "Nama Proyek",
+      desc:
+        projectForm.desc ||
+        fallbackProject.desc ||
+        "Deskripsi singkat proyek akan tampil di sini.",
+      stack: projectForm.stack
+        ? projectForm.stack
+            .split(",")
+            .map((stack) => stack.trim())
+            .filter(Boolean)
+        : fallbackProject.stack || ["React", "MySQL"],
+      accent: fallbackProject.accent || "blue",
+    };
+  };
+
+  const renderPreview = () => {
+    if (activeMenu === "dashboard") {
+      return (
+        <section className="admin-card live-preview">
+          <div className="admin-card-head">
+            <div>
+              <span>Mini View</span>
+              <h2>Ringkasan Website</h2>
+            </div>
+          </div>
+          <div className="preview-browser">
+            <div className="preview-nav">
+              <img src={dwebinLogo} alt="DWebin Digital" />
+              <span>{settings.brand_name || "DWebin Digital"}</span>
+            </div>
+            <div className="preview-hero">
+              <small>Jasa pembuatan website</small>
+              <h3>{contentData.page_content?.[0]?.subtitle || "Website profesional untuk bisnis dan sekolah"}</h3>
+              <p>{contentData.page_content?.[0]?.body || "Konten utama website tampil di sini."}</p>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    if (activeMenu === "projects") {
+      const project = getProjectPreviewItem();
+      return (
+        <section className="admin-card live-preview">
+          <div className="admin-card-head">
+            <div>
+              <span>Mini View</span>
+              <h2>Preview Portfolio</h2>
+            </div>
+          </div>
+          <article className={`preview-project project-card--${project.accent}`}>
+            <div className="preview-art">
+              <span className="art-grid" />
+            </div>
+            <div>
+              <span>{project.category}</span>
+              <h3>{project.title}</h3>
+              <p>{project.desc}</p>
+              <div className="tag-row">
+                {project.stack.map((stack) => (
+                  <span key={stack}>{stack}</span>
+                ))}
+              </div>
+            </div>
+          </article>
+        </section>
+      );
+    }
+
+    if (activeMenu === "settings") {
+      return (
+        <section className="admin-card live-preview">
+          <div className="admin-card-head">
+            <div>
+              <span>Mini View</span>
+              <h2>Preview Kontak</h2>
+            </div>
+          </div>
+          <div className="preview-contact">
+            <b>{settings.brand_name || "DWebin Digital"}</b>
+            <span>{settings.email || "email@domain.com"}</span>
+            <p>WhatsApp: {settings.whatsapp || "628..."}</p>
+          </div>
+        </section>
+      );
+    }
+
+    if (activeConfig) {
+      const item = getContentPreviewItem(activeConfig);
+      return (
+        <section className="admin-card live-preview">
+          <div className="admin-card-head">
+            <div>
+              <span>Mini View</span>
+              <h2>Preview {activeConfig.eyebrow}</h2>
+            </div>
+          </div>
+          <article className={`preview-content preview-content--${activeMenu}`}>
+            <span>{item.subtitle || activeConfig.eyebrow}</span>
+            <h3>{item.title || "Judul konten"}</h3>
+            <p>{item.body || "Isi konten akan tampil di sini."}</p>
+            {activeMenu === "pricing" && item.meta?.items?.length > 0 && (
+              <ul>
+                {item.meta.items.map((feature) => (
+                  <li key={feature}>
+                    <Icon name="check" size={14} /> {feature}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {activeMenu === "testimonials" && (
+              <b>Rating {item.meta?.rating || 5}/5</b>
+            )}
+          </article>
+        </section>
+      );
+    }
+
+    return null;
   };
 
   const renderContentManager = (config) => {
@@ -682,6 +850,8 @@ function AdminDashboard({
               </form>
             </section>
           )}
+
+          {renderPreview()}
         </section>
       </main>
     </div>

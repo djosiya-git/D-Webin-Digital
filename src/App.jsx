@@ -186,28 +186,66 @@ const fallbackPackages = [
     name: "Standard",
     price: "Mulai 1,5jt",
     desc: "Cocok untuk company profile, jasa, sekolah, atau UMKM.",
-    items: ["3-5 halaman", "Desain custom", "Integrasi WhatsApp", "Optimasi dasar"],
+    items: [
+      "3-5 halaman",
+      "Desain custom",
+      "Integrasi WhatsApp",
+      "Optimasi dasar",
+    ],
   },
   {
     name: "Custom",
     price: "Diskusi dulu",
     desc: "Untuk sistem web dengan dashboard, login, database, dan fitur khusus.",
-    items: ["Fitur sesuai kebutuhan", "Admin panel", "Database MySQL", "Support deploy"],
+    items: [
+      "Fitur sesuai kebutuhan",
+      "Admin panel",
+      "Database MySQL",
+      "Support deploy",
+    ],
   },
 ];
 
 const workflow = [
-  ["01", "Diskusi Kebutuhan", "Kita bahas tujuan website, fitur utama, referensi desain, dan target pengguna."],
-  ["02", "Struktur & Desain", "Kami susun halaman, konten utama, dan arah visual agar website mudah dipahami."],
-  ["03", "Development", "Website dibuat responsif, cepat, dan siap dipakai di perangkat desktop maupun mobile."],
-  ["04", "Revisi & Online", "Setelah review, website dirapikan lalu dibantu sampai siap publish."],
+  [
+    "01",
+    "Diskusi Kebutuhan",
+    "Kita bahas tujuan website, fitur utama, referensi desain, dan target pengguna.",
+  ],
+  [
+    "02",
+    "Struktur & Desain",
+    "Kami susun halaman, konten utama, dan arah visual agar website mudah dipahami.",
+  ],
+  [
+    "03",
+    "Development",
+    "Website dibuat responsif, cepat, dan siap dipakai di perangkat desktop maupun mobile.",
+  ],
+  [
+    "04",
+    "Revisi & Online",
+    "Setelah review, website dirapikan lalu dibantu sampai siap publish.",
+  ],
 ];
 
 const fallbackFaqs = [
-  ["Berapa lama pengerjaan website?", "Landing page biasanya 3-7 hari. Website company profile sekitar 1-2 minggu, tergantung jumlah halaman dan revisi."],
-  ["Apakah bisa request desain?", "Bisa. Anda boleh membawa referensi, warna brand, logo, atau contoh website yang disukai."],
-  ["Apakah sudah termasuk hosting dan domain?", "Bisa dibantu setup. Biaya hosting/domain menyesuaikan provider yang dipilih."],
-  ["Apakah bisa dibuatkan dashboard admin?", "Bisa, terutama untuk proyek custom seperti data siswa, absensi, katalog, atau sistem internal."],
+  [
+    "Berapa lama pengerjaan website?",
+    "Landing page biasanya 3-7 hari. Website company profile sekitar 1-2 minggu, tergantung jumlah halaman dan revisi.",
+  ],
+  [
+    "Apakah bisa request desain?",
+    "Bisa. Anda boleh membawa referensi, warna brand, logo, atau contoh website yang disukai.",
+  ],
+  [
+    "Apakah sudah termasuk hosting dan domain?",
+    "Bisa dibantu setup. Biaya hosting/domain menyesuaikan provider yang dipilih.",
+  ],
+  [
+    "Apakah bisa dibuatkan dashboard admin?",
+    "Bisa, terutama untuk proyek custom seperti data siswa, absensi, katalog, atau sistem internal.",
+  ],
 ];
 
 const fallbackSettings = {
@@ -260,23 +298,33 @@ function App() {
       getContentItems("page_content"),
       getSettings(),
     ])
-      .then(([projectData, serviceData, pricingData, faqData, testimonialData, pageData, settingData]) => {
-        setProjects(projectData);
-        setServices(serviceData.map((item) => [item.title, item.body]));
-        setPackages(
-          pricingData.map((item) => ({
-            name: item.title,
-            price: item.subtitle,
-            desc: item.body,
-            items: item.meta?.items || [],
-          })),
-        );
-        setFaqs(faqData.map((item) => [item.title, item.body]));
-        setTestimonials(testimonialData);
-        setPageContent(pageData[0] || {});
-        setSettings({ ...fallbackSettings, ...settingData });
-        setApiError("");
-      })
+      .then(
+        ([
+          projectData,
+          serviceData,
+          pricingData,
+          faqData,
+          testimonialData,
+          pageData,
+          settingData,
+        ]) => {
+          setProjects(projectData);
+          setServices(serviceData.map((item) => [item.title, item.body]));
+          setPackages(
+            pricingData.map((item) => ({
+              name: item.title,
+              price: item.subtitle,
+              desc: item.body,
+              items: item.meta?.items || [],
+            })),
+          );
+          setFaqs(faqData.map((item) => [item.title, item.body]));
+          setTestimonials(testimonialData);
+          setPageContent(pageData[0] || {});
+          setSettings({ ...fallbackSettings, ...settingData });
+          setApiError("");
+        },
+      )
       .catch(() => {
         setProjects([]);
         setApiError("API belum aktif. Jalankan npm run server.");
@@ -323,7 +371,14 @@ function App() {
       observer.disconnect();
       window.removeEventListener("scroll", onScroll);
     };
-  }, [page, projects.length, services.length, packages.length, faqs.length, testimonials.length]);
+  }, [
+    page,
+    projects.length,
+    services.length,
+    packages.length,
+    faqs.length,
+    testimonials.length,
+  ]);
 
   useEffect(() => {
     const onKey = (event) => event.key === "Escape" && setSelectedProject(null);
@@ -337,7 +392,8 @@ function App() {
       : projects.filter((project) => project.category === activeFilter);
   }, [activeFilter, projects]);
   const whatsappLink = `https://wa.me/${settings.whatsapp}?text=Halo%20DWebin%20Digital,%20kami%20ingin%20konsultasi%20pembuatan%20website.`;
-  const heroTitle = pageContent.subtitle || "Website profesional untuk bisnis dan sekolah";
+  const heroTitle =
+    pageContent.subtitle || "Website profesional untuk bisnis dan sekolah";
   const heroDescription =
     pageContent.body ||
     "Kami membantu membuat website responsif, cepat, dan mudah digunakan untuk promosi, company profile, sekolah, UMKM, dan sistem web custom.";
@@ -383,7 +439,9 @@ function App() {
       const savedMessage = await createMessage(contactForm);
       setMessages((currentMessages) => [savedMessage, ...currentMessages]);
       setContactForm({ name: "", email: "", message: "" });
-      setContactStatus("Pesan berhasil dikirim. Kami akan membalas secepatnya.");
+      setContactStatus(
+        "Pesan berhasil dikirim. Kami akan membalas secepatnya.",
+      );
     } catch {
       setContactStatus("Pesan belum terkirim. Silakan hubungi via WhatsApp.");
     }
@@ -461,7 +519,13 @@ function App() {
               {label}
             </a>
           ))}
-          <a className="nav-contact" href={whatsappLink} target="_blank" rel="noreferrer" onClick={closeMenu}>
+          <a
+            className="nav-contact"
+            href={whatsappLink}
+            target="_blank"
+            rel="noreferrer"
+            onClick={closeMenu}
+          >
             Konsultasi <Icon name="arrow" size={16} />
           </a>
         </nav>
@@ -498,11 +562,14 @@ function App() {
               <br />
               <span>yang siap online.</span>
             </h1>
-            <p className="hero-description">
-              {heroDescription}
-            </p>
+            <p className="hero-description">{heroDescription}</p>
             <div className="hero-cta">
-              <a className="button button--primary" href={whatsappLink} target="_blank" rel="noreferrer">
+              <a
+                className="button button--primary"
+                href={whatsappLink}
+                target="_blank"
+                rel="noreferrer"
+              >
                 Konsultasi gratis <Icon name="arrow" size={18} />
               </a>
               <a className="button button--ghost" href="#pricing">
@@ -541,8 +608,8 @@ function App() {
                   <span className="token-green">'Website Development'</span>,
                 </p>
                 <p className="indent">
-                  focus: [<span className="token-green">'Company Profile'</span>,{" "}
-                  <span className="token-green">'Web App'</span>],
+                  focus: [<span className="token-green">'Company Profile'</span>
+                  , <span className="token-green">'Web App'</span>],
                 </p>
                 <p className="indent">
                   status: <span className="token-orange">'Developing'</span>
@@ -650,7 +717,12 @@ function App() {
                     </li>
                   ))}
                 </ul>
-                <a className="button button--ghost" href={whatsappLink} target="_blank" rel="noreferrer">
+                <a
+                  className="button button--ghost"
+                  href={whatsappLink}
+                  target="_blank"
+                  rel="noreferrer"
+                >
                   Tanya paket <Icon name="arrow" size={17} />
                 </a>
               </article>
@@ -705,7 +777,9 @@ function App() {
               <article className="project-empty">
                 <Icon name="external" size={24} />
                 <h3>Belum ada portfolio</h3>
-                <p>Data portfolio akan tampil setelah ditambahkan dari admin.</p>
+                <p>
+                  Data portfolio akan tampil setelah ditambahkan dari admin.
+                </p>
               </article>
             )}
 
@@ -794,12 +868,17 @@ function App() {
               <span>yang lebih profesional?</span>
             </h2>
             <p>
-              Ceritakan kebutuhan website Anda. Kami bantu arahkan paket,
-              fitur, dan estimasi pengerjaan yang paling sesuai.
+              Ceritakan kebutuhan website Anda. Kami bantu arahkan paket, fitur,
+              dan estimasi pengerjaan yang paling sesuai.
             </p>
           </div>
           <div className="contact-actions">
-            <a className="button button--primary whatsapp-button" href={whatsappLink} target="_blank" rel="noreferrer">
+            <a
+              className="button button--primary whatsapp-button"
+              href={whatsappLink}
+              target="_blank"
+              rel="noreferrer"
+            >
               Konsultasi via WhatsApp <Icon name="arrow" size={18} />
             </a>
             <button className="email-card" onClick={copyEmail}>
@@ -846,11 +925,7 @@ function App() {
               <a href={settings.github} target="_blank" rel="noreferrer">
                 <Icon name="github" size={19} /> GitHub
               </a>
-              <a
-                href={settings.linkedin}
-                target="_blank"
-                rel="noreferrer"
-              >
+              <a href={settings.linkedin} target="_blank" rel="noreferrer">
                 <Icon name="linkedin" size={19} /> LinkedIn
               </a>
             </div>
@@ -860,8 +935,7 @@ function App() {
 
       <footer>
         <p>
-          © {new Date().getFullYear()} DWebin Digital. Dibangun dengan
-          React.
+          © {new Date().getFullYear()} DWebin Digital. Dibangun dengan React.
         </p>
         <a href="#home">Kembali ke atas ↑</a>
       </footer>
@@ -897,7 +971,7 @@ function App() {
                 className="button button--primary"
                 href={selectedProject.links.demo}
               >
-                Hubungi kami <Icon name="arrow" size={18} />
+                Demo <Icon name="arrow" size={18} />
               </a>
               <a
                 className="button button--ghost"
